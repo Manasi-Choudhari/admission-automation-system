@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apply — BFU Admissions</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── Caste section extras ──────────────────────────────────────── */
+    .section-card {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #e5e0d5);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border, #e5e0d5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .caste-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #2563eb;
+      margin-left: auto;
+    }
+    /* Conditional upload panels */
+    .conditional-upload {
+      display: none;
+    }
+    .conditional-upload.visible {
+      display: block;
+    }
+    /* Info callout */
+    .info-callout {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #1e40af;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .info-callout.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #92400e;
+    }
+    .info-callout.success {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #166534;
+    }
+    /* Mini file upload (for individual cert uploads) */
+    .mini-upload {
+      border: 2px dashed var(--border, #e5e0d5);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #fafaf8;
+      font-size: 13px;
+    }
+    .mini-upload:hover { border-color: #2563eb; background: #eff6ff; }
+    .mini-upload.has-file { border-color: #16a34a; background: #f0fdf4; }
+    .mini-upload .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .cert-file-name {
+      font-size: 12px;
+      color: #16a34a;
+      font-weight: 600;
+      margin-top: 4px;
+      display: none;
+    }
+    .cert-file-name.visible { display: block; }
+
+    /* RPA status banner */
+    .rpa-banner {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      color: #f8fafc;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .rpa-banner .rpa-icon { font-size: 22px; }
+    .rpa-banner span { line-height: 1.5; }
+    .rpa-banner strong { color: #7dd3fc; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <div class="logo-icon">🎓</div>
+    <span>BFU Admissions</span>
+  </a>
+  <div class="navbar-links">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="status.html" class="nav-link">Check Status</a>
+    <a href="apply.html" class="nav-link active nav-auth hidden">My Application</a>
+    <a href="#" onclick="logout()" class="nav-link nav-auth hidden" style="color:#fca5a5;">Logout</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb">Home / <span>Apply</span></div>
+  <h1>📋 Admission Application</h1>
+  <p>Complete all fields carefully. Ensure your documents are clear and legible.</p>
+</div>
+
+<div class="container" style="padding-top:32px;padding-bottom:48px;">
+
+  <!-- Auth check message (shown if not logged in) -->
+  <div id="auth-warning" class="hidden">
+    <div class="alert alert-warning">
+      <span>🔒</span>
+      <div>
+        You must be logged in to apply.
+        <a href="login.html">Sign in here</a> or <a href="register.html">create an account</a>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Already applied message -->
+  <div id="already-applied" class="hidden">
+    <div class="card" style="text-align:center;padding:48px;">
+      <div style="font-size:64px;margin-bottom:16px;">📬</div>
+      <h2>Application Already Submitted</h2>
+      <p style="margin:12px 0 24px;">You have already submitted an admission application.</p>
+      <div id="existing-app-info"></div>
+      <a href="status.html" class="btn btn-primary" style="margin-top:20px;">🔍 Track Your Application</a>
+    </div>
+  </div>
+
+  <!-- Application Form -->
+  <div id="application-form-container">
+    <div class="form-container" style="max-width:720px;">
+      <div id="alert-box"></div>
+
+      <form id="apply-form" novalidate>
+
+        <!-- ══ Section 1: Personal Info ══════════════════════════════ -->
+        <div class="section-card">
+          <h3 class="section-title">👤 Personal Information</h3>
+
+          <div class="form-group">
+            <label for="full-name">Full Name (as per certificate) <span class="required">*</span></label>
+            <input type="text" id="full-name" placeholder="e.g. Rahul Kumar Sharma">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="email-display">Email Address</label>
+              <input type="email" id="email-display" disabled style="background:#f8f6f0;color:var(--slate);">
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone Number <span class="required">*</span></label>
+              <input type="tel" id="phone" placeholder="10-digit mobile number" maxlength="10">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Residential Address <span class="required">*</span></label>
+            <textarea id="address" placeholder="Full address including city, state and PIN code"></textarea>
+          </div>
+        </div>
+
+        <!-- ══ Section 2: Caste & Income ═════════════════════════════ -->
+        <div class="section-card">
+          <h3 class="section-title">
+            🏫 Category &amp; Income Details
+            <span class="caste-badge" id="category-badge">General</span>
+          </h3>
+
+          <div class="info-callout" id="category-info">
+            ℹ️ <span>Select your <strong>caste category</strong> to see which additional documents are required for your application.</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="caste-category">Caste Category <span class="required">*</span></label>
+              <select id="caste-category" onchange="handleCasteChange()">
+                <option value="General">General (No reservation)</option>
+                <option value="OBC">OBC — Other Backward Class</option>
+                <option value="OBC-NCL">OBC-NCL — Non Creamy Layer</option>
+                <option value="SC">SC — Scheduled Caste</option>
+                <option value="ST">ST — Scheduled Tribe</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="annual-income">Annual Family Income <span class="required" id="income-required-star" style="display:none;">*</span></label>
+              <select id="annual-income">
+                <option value="">— Select income range —</option>
+                <option value="Below 1 Lakh">Below ₹1 Lakh</option>
+                <option value="1-2.5 Lakh">₹1 – ₹2.5 Lakh</option>
+                <option value="2.5-5 Lakh">₹2.5 – ₹5 Lakh</option>
+                <option value="5-8 Lakh">₹5 – ₹8 Lakh</option>
+                <option value="Above 8 Lakh">Above ₹8 Lakh</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Caste Certificate upload (SC / ST / OBC / OBC-NCL) -->
+          <div class="conditional-upload" id="caste-cert-section">
+            <div class="form-group">
+              <label for="caste-cert-upload">
+                Caste Certificate <span class="required">*</span>
+                <span style="font-size:11px;font-weight:400;color:var(--slate-light);margin-left:6px;">
+                  (Issued by Tehsildar / SDO / District Magistrate)
+                </span>
+              </label>
+              <div class="mini-upload" id="caste-cert-zone"
+                   onclick="document.getElementById('caste-cert-input').click()">
+                <div class="upload-icon">📜</div>
+                <p><strong>Click to upload Caste Certificate</strong></p>
+                <p style="color:#64748b;font-size:12px;">PDF, JPG, PNG — Max 5MB</p>
+                <div class="cert-file-name" id="caste-cert-name"></div>
+              </div>
+              <input type="file" id="caste-cert-input" accept=".pdf,.jpg,.jpeg,.png"
+                     style="display:none;" onchange="handleCertUpload('caste')">
+            </div>
+          </div>
+
+          <!-- Income / NCL Certificate upload (OBC-NCL only) -->
+          <div class="conditional-upload" id="income-cert-section">
+            <div class="form-group">
+              <label for="income-cert-upload">
+                Income / Non-Creamy Layer Certificate <span class="required">*</span>
+                <span style="font-size:11px;font-weight:400;color:var(--slate-light);margin-left:6px;">
+                  (Must state annual income below ₹8 Lakh)
+                </span>
+              </label>
+              <div class="mini-upload" id="income-cert-zone"
+                   onclick="document.getElementById('income-cert-input').click()">
+                <div class="upload-icon">💰</div>
+                <p><strong>Click to upload Income / NCL Certificate</strong></p>
+                <p style="color:#64748b;font-size:12px;">PDF, JPG, PNG — Max 5MB</p>
+                <div class="cert-file-name" id="income-cert-name"></div>
+              </div>
+              <input type="file" id="income-cert-input" accept=".pdf,.jpg,.jpeg,.png"
+                     style="display:none;" onchange="handleCertUpload('income')">
+            </div>
+          </div>
+
+          <!-- Dynamic required documents summary -->
+          <div id="docs-required-summary" style="display:none;margin-top:8px;">
+            <div class="info-callout warning" id="docs-callout">
+              <span>📋</span>
+              <span id="docs-callout-text"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ Section 3: Course ════════════════════════════════════ -->
+        <div class="section-card">
+          <h3 class="section-title">🎓 Course Selection</h3>
+          <div class="form-group">
+            <label for="course">Preferred Program <span class="required">*</span></label>
+            <select id="course">
+              <option value="">— Select a program —</option>
+              <optgroup label="Undergraduate (UG)">
+                <option value="B.Tech Computer Science">B.Tech Computer Science</option>
+                <option value="B.Tech Electronics Engineering">B.Tech Electronics Engineering</option>
+                <option value="B.Tech Civil Engineering">B.Tech Civil Engineering</option>
+                <option value="B.Tech Mechanical Engineering">B.Tech Mechanical Engineering</option>
+                <option value="BCA">BCA (Bachelor of Computer Applications)</option>
+                <option value="B.Sc Physics">B.Sc Physics</option>
+                <option value="B.Sc Mathematics">B.Sc Mathematics</option>
+                <option value="B.A LLB">B.A LLB (Hons.)</option>
+                <option value="B.Des Design">B.Des Design</option>
+              </optgroup>
+              <optgroup label="Postgraduate (PG)">
+                <option value="MBA Business Analytics">MBA Business Analytics</option>
+                <option value="M.Tech Computer Science">M.Tech Computer Science</option>
+                <option value="M.Sc Biotechnology">M.Sc Biotechnology</option>
+                <option value="MCA">MCA (Master of Computer Applications)</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <!-- ══ Section 4: Academic Documents ══════════════════════════ -->
+        <div class="section-card">
+          <h3 class="section-title">📂 Academic Documents</h3>
+          <p class="text-small text-muted" style="margin-bottom:16px;">
+            Upload your academic documents. Accepted formats: PDF, JPG, PNG (max 5MB each).
+          </p>
+
+          <div style="background:var(--amber-pale);border:1px solid var(--amber);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;">
+            <strong>📋 Required Academic Documents:</strong>
+            <ul style="margin:8px 0 0 16px;line-height:2;">
+              <li>10th Standard Marksheet</li>
+              <li>12th Standard Marksheet</li>
+              <li>Transfer / Migration Certificate</li>
+              <li>Character Certificate</li>
+            </ul>
+          </div>
+
+          <!-- Custom file upload area -->
+          <div class="file-upload-area" id="drop-zone" onclick="document.getElementById('doc-files').click()">
+            <div class="upload-icon">📁</div>
+            <p><strong>Click to upload</strong> or drag &amp; drop files here</p>
+            <p class="upload-hint">PDF, JPG, PNG — Max 5MB per file</p>
+          </div>
+          <input type="file" id="doc-files" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;">
+          <div id="file-list" class="file-list"></div>
+        </div>
+
+        <!-- ══ RPA Info Banner ═══════════════════════════════════════ -->
+        <div class="rpa-banner">
+          <span class="rpa-icon">🤖</span>
+          <span>
+            <strong>Automated Verification:</strong> After you submit, our RPA system will automatically
+            verify all your documents and send you an email with the verification result within minutes.
+          </span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn" class="btn btn-primary btn-lg"
+                style="width:100%;justify-content:center;margin-top:24px;">
+          🚀 Submit Application
+        </button>
+        <p class="text-center text-small text-muted" style="margin-top:12px;">
+          By submitting, you confirm all information is accurate and documents are genuine.
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2024 Bright Future University Admissions System</p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  // ── Auth guard ──────────────────────────────────────────────────────
+  const user = Auth.get();
+
+  if (!user || user.role !== "student") {
+    document.getElementById("auth-warning").classList.remove("hidden");
+    document.getElementById("application-form-container").classList.add("hidden");
+  } else {
+    document.getElementById("email-display").value = user.email;
+    checkExistingApplication();
+  }
+
+  async function checkExistingApplication() {
+    if (!user) return;
+    const result = await apiFetch(`/student/my-application/${user.user_id}`);
+    if (result.success && result.data.application) {
+      const app = result.data.application;
+      document.getElementById("application-form-container").classList.add("hidden");
+      document.getElementById("already-applied").classList.remove("hidden");
+      document.getElementById("existing-app-info").innerHTML = `
+        <div style="display:inline-grid;grid-template-columns:auto auto;gap:8px 24px;text-align:left;margin:0 auto;">
+          <span class="text-muted">Application ID:</span><strong>#${app.id}</strong>
+          <span class="text-muted">Course:</span><strong>${app.course}</strong>
+          <span class="text-muted">Category:</span><strong>${app.caste_category || 'General'}</strong>
+          <span class="text-muted">Status:</span>${getStatusBadge(app.status)}
+          <span class="text-muted">Submitted:</span><span>${formatDate(app.created_at)}</span>
+          <span class="text-muted">Docs Verified:</span><span>${app.rpa_verified ? '✅ Verified by RPA' : '⏳ Pending verification'}</span>
+        </div>
+      `;
+    }
+  }
+
+  // ── Caste category logic ────────────────────────────────────────────
+  const RESERVED_CATS  = ["OBC", "OBC-NCL", "SC", "ST"];
+  const NCL_CATS       = ["OBC-NCL"];
+
+  const CATEGORY_INFO = {
+    "General":  { label: "General",  color: "#2563eb", desc: "No additional documents required for category." },
+    "OBC":      { label: "OBC",      color: "#7c3aed", desc: "Caste Certificate required." },
+    "OBC-NCL":  { label: "OBC-NCL",  color: "#b45309", desc: "Caste Certificate + Income/NCL Certificate required." },
+    "SC":       { label: "SC",       color: "#dc2626", desc: "Caste Certificate required." },
+    "ST":       { label: "ST",       color: "#059669", desc: "Caste Certificate required." },
+  };
+
+  function handleCasteChange() {
+    const cat = document.getElementById("caste-category").value;
+    const info = CATEGORY_INFO[cat] || CATEGORY_INFO["General"];
+
+    // Update badge
+    const badge = document.getElementById("category-badge");
+    badge.textContent = info.label;
+    badge.style.background = info.color + "1a";
+    badge.style.color = info.color;
+
+    // Update info callout
+    document.getElementById("category-info").innerHTML =
+      `ℹ️ <span><strong>${cat}</strong>: ${info.desc}</span>`;
+
+    // Show / hide caste cert section
+    const casteSect = document.getElementById("caste-cert-section");
+    if (RESERVED_CATS.includes(cat)) {
+      casteSect.classList.add("visible");
+    } else {
+      casteSect.classList.remove("visible");
+      casteCertFile = null;
+      resetCertZone("caste");
+    }
+
+    // Show / hide income cert section
+    const incomeSect = document.getElementById("income-cert-section");
+    if (NCL_CATS.includes(cat)) {
+      incomeSect.classList.add("visible");
+      document.getElementById("income-required-star").style.display = "inline";
+    } else {
+      incomeSect.classList.remove("visible");
+      document.getElementById("income-required-star").style.display = "none";
+      incomeCertFile = null;
+      resetCertZone("income");
+    }
+
+    // Update summary
+    const summary = document.getElementById("docs-required-summary");
+    const calloutText = document.getElementById("docs-callout-text");
+    if (cat !== "General") {
+      summary.style.display = "block";
+      let needed = ["Caste Certificate"];
+      if (NCL_CATS.includes(cat)) needed.push("Income/NCL Certificate");
+      calloutText.innerHTML =
+        `<strong>Extra documents needed for ${cat}:</strong> ${needed.join(", ")}. ` +
+        `Make sure they are issued by a competent authority and are not older than 3 years.`;
+    } else {
+      summary.style.display = "none";
+    }
+  }
+
+  // ── Certificate file handling ───────────────────────────────────────
+  let casteCertFile = null;
+  let incomeCertFile = null;
+
+  function handleCertUpload(type) {
+    const inputId = type === "caste" ? "caste-cert-input" : "income-cert-input";
+    const zoneId  = type === "caste" ? "caste-cert-zone"  : "income-cert-zone";
+    const nameId  = type === "caste" ? "caste-cert-name"  : "income-cert-name";
+
+    const input = document.getElementById(inputId);
+    const file  = input.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showAlert("alert-box", `"${file.name}" exceeds 5MB limit.`, "warning");
+      input.value = "";
+      return;
+    }
+
+    if (type === "caste") {
+      casteCertFile = file;
+    } else {
+      incomeCertFile = file;
+    }
+
+    // Update UI
+    const zone = document.getElementById(zoneId);
+    const nameEl = document.getElementById(nameId);
+    zone.classList.add("has-file");
+    nameEl.textContent = `✅ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+    nameEl.classList.add("visible");
+  }
+
+  function resetCertZone(type) {
+    const zoneId = type === "caste" ? "caste-cert-zone"  : "income-cert-zone";
+    const nameId = type === "caste" ? "caste-cert-name"  : "income-cert-name";
+    const inputId= type === "caste" ? "caste-cert-input" : "income-cert-input";
+    document.getElementById(zoneId).classList.remove("has-file");
+    const nameEl = document.getElementById(nameId);
+    nameEl.textContent = "";
+    nameEl.classList.remove("visible");
+    document.getElementById(inputId).value = "";
+  }
+
+  // ── Academic file upload ────────────────────────────────────────────
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("doc-files");
+  const fileList  = document.getElementById("file-list");
+  let selectedFiles = [];
+
+  fileInput.addEventListener("change", function() {
+    addFiles(Array.from(this.files));
+  });
+
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    addFiles(Array.from(e.dataTransfer.files));
+  });
+
+  function addFiles(files) {
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert("alert-box", `File "${file.name}" exceeds 5MB limit.`, "warning");
+        return;
+      }
+      if (!selectedFiles.some(f => f.name === file.name)) {
+        selectedFiles.push(file);
+      }
+    });
+    renderFileList();
+  }
+
+  function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    renderFileList();
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = selectedFiles.map((f, i) => `
+      <div class="file-item">
+        <span>📄</span>
+        <span style="flex:1;">${f.name}</span>
+        <span style="color:var(--slate-light);font-size:11px;">${(f.size / 1024).toFixed(1)} KB</span>
+        <button type="button" onclick="removeFile(${i})"
+          style="background:none;border:none;cursor:pointer;color:var(--error);font-size:14px;">✕</button>
+      </div>
+    `).join("");
+  }
+
+  // ── Form Submission ─────────────────────────────────────────────────
+  document.getElementById("apply-form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    clearAlert("alert-box");
+
+    const fullName      = document.getElementById("full-name").value.trim();
+    const phone         = document.getElementById("phone").value.trim();
+    const address       = document.getElementById("address").value.trim();
+    const course        = document.getElementById("course").value;
+    const casteCategory = document.getElementById("caste-category").value;
+    const annualIncome  = document.getElementById("annual-income").value;
+
+    // ── Validation ─────────────────────────────────────────────────
+    let errors = [];
+    if (!Validate.minLength(fullName, 3))  errors.push("Please enter your full name.");
+    if (!Validate.phone(phone))            errors.push("Enter a valid 10-digit phone number.");
+    if (!Validate.minLength(address, 10))  errors.push("Please enter your complete address.");
+    if (!course)                           errors.push("Please select a program.");
+    if (selectedFiles.length === 0)        errors.push("Please upload at least one academic document.");
+
+    // Caste-specific validation
+    if (RESERVED_CATS.includes(casteCategory) && !casteCertFile) {
+      errors.push(`Caste Certificate is required for ${casteCategory} category.`);
+    }
+    if (NCL_CATS.includes(casteCategory) && !incomeCertFile) {
+      errors.push("Income / Non-Creamy Layer Certificate is required for OBC-NCL category.");
+    }
+
+    if (errors.length > 0) {
+      showAlert("alert-box", errors.join("<br>"), "error");
+      return;
+    }
+
+    // ── Build FormData ─────────────────────────────────────────────
+    const formData = new FormData();
+    formData.append("student_id",     user.user_id);
+    formData.append("course",         course);
+    formData.append("full_name",      fullName);
+    formData.append("phone",          phone);
+    formData.append("address",        address);
+    formData.append("caste_category", casteCategory);
+    if (annualIncome) formData.append("annual_income", annualIncome);
+
+    // Academic documents (required, multiple)
+    selectedFiles.forEach(file => formData.append("documents", file));
+
+    // Caste certificate (optional field name must match backend)
+    if (casteCertFile)  formData.append("caste_cert",  casteCertFile);
+    if (incomeCertFile) formData.append("income_cert", incomeCertFile);
+
+    const btn = document.getElementById("submit-btn");
+    setButtonLoading(btn, true);
+
+    const result = await apiFetch("/student/apply", {
+      method: "POST",
+      body: formData
+    });
+
+    setButtonLoading(btn, false, "🚀 Submit Application");
+
+    if (result.success) {
+      showAlert("alert-box",
+        `🎉 Application submitted! Your Application ID is <strong>#${result.data.application_id}</strong>. ` +
+        `🤖 Our RPA system is now verifying your documents — you'll receive an email shortly.`,
+        "success"
+      );
+      setTimeout(() => checkExistingApplication(), 1800);
+    } else {
+      showAlert("alert-box", result.error || "Submission failed. Please try again.", "error");
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — BFU Admissions</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <div class="logo-icon">🎓</div>
+    <span>BFU Admissions</span>
+  </a>
+  <div class="navbar-links">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="login.html" class="nav-link">Login</a>
+    <a href="register.html" class="nav-link nav-btn">Register</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="breadcrumb">Home / <span>Register</span></div>
+  <h1>Create Account</h1>
+  <p>Start your admission journey by creating a free account</p>
+</div>
+
+<div class="container">
+  <div class="form-container">
+    <div class="form-header">
+      <div class="form-icon">📝</div>
+      <h2>Student Registration</h2>
+      <p>Fill in your details to get started</p>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <form id="register-form" novalidate>
+      <div class="form-group">
+        <label for="name">Full Name <span class="required">*</span></label>
+        <input type="text" id="name" placeholder="e.g. Rahul Sharma" autocomplete="name">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address <span class="required">*</span></label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password <span class="required">*</span></label>
+        <div style="position:relative;">
+          <input type="password" id="password" placeholder="Min. 6 characters" autocomplete="new-password">
+          <button type="button" id="toggle-password"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;">
+            👁
+          </button>
+        </div>
+        <div style="margin-top:8px;">
+          <div id="strength-bar" style="height:4px;border-radius:4px;background:var(--border);overflow:hidden;">
+            <div id="strength-fill" style="height:100%;width:0%;transition:all 0.3s;border-radius:4px;"></div>
+          </div>
+          <div id="strength-label" style="font-size:11px;margin-top:4px;color:var(--slate-light);"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirm Password <span class="required">*</span></label>
+        <input type="password" id="confirm-password" placeholder="Repeat your password">
+      </div>
+
+      <div class="form-group">
+        <label for="role">Account Type <span class="required">*</span></label>
+        <select id="role">
+          <option value="student">Student</option>
+          <option value="admin">Administrator</option>
+        </select>
+        <div style="font-size:12px;color:var(--slate-light);margin-top:4px;">
+          ⚠️ Admin accounts require authorization from the institution.
+        </div>
+      </div>
+
+      <div class="form-group" style="display:flex;align-items:flex-start;gap:10px;">
+        <input type="checkbox" id="agree" style="width:auto;margin-top:3px;">
+        <label for="agree" style="font-weight:400;font-size:13px;">
+          I agree to the <a href="#" style="color:var(--navy-mid);">Terms of Service</a> and
+          <a href="#" style="color:var(--navy-mid);">Privacy Policy</a>
+        </label>
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%;justify-content:center;">
+        Create Account
+      </button>
+    </form>
+
+    <hr class="divider">
+    <p class="text-center text-small">
+      Already have an account? <a href="login.html">Sign in here →</a>
+    </p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2024 Bright Future University Admissions System</p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) {
+    window.location.href = Auth.isAdmin() ? "admin.html" : "apply.html";
+  }
+
+  // Password visibility toggle
+  document.getElementById("toggle-password").addEventListener("click", function() {
+    const pwd = document.getElementById("password");
+    const isHidden = pwd.type === "password";
+    pwd.type = isHidden ? "text" : "password";
+    this.textContent = isHidden ? "🙈" : "👁";
+  });
+
+  // Password strength meter
+  document.getElementById("password").addEventListener("input", function() {
+    const val = this.value;
+    const fill = document.getElementById("strength-fill");
+    const label = document.getElementById("strength-label");
+    
+    let strength = 0;
+    if (val.length >= 6) strength++;
+    if (val.length >= 10) strength++;
+    if (/[A-Z]/.test(val)) strength++;
+    if (/[0-9]/.test(val)) strength++;
+    if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+    const levels = [
+      { pct: "0%",   color: "transparent", text: "" },
+      { pct: "25%",  color: "#dc2626",     text: "Weak" },
+      { pct: "50%",  color: "#d97706",     text: "Fair" },
+      { pct: "75%",  color: "#2563eb",     text: "Good" },
+      { pct: "100%", color: "#16a34a",     text: "Strong" },
+    ];
+    const lvl = levels[Math.min(strength, 4)];
+    fill.style.width = lvl.pct;
+    fill.style.background = lvl.color;
+    label.textContent = lvl.text ? `Password strength: ${lvl.text}` : "";
+    label.style.color = lvl.color;
+  });
+
+  // Live validation
+  setupLiveValidation("name", v => Validate.minLength(v, 2), "Name must be at least 2 characters.");
+  setupLiveValidation("email", v => Validate.email(v), "Please enter a valid email address.");
+  setupLiveValidation("password", v => Validate.minLength(v, 6), "Password must be at least 6 characters.");
+
+  // Form submission
+  document.getElementById("register-form").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    clearAlert("alert-box");
+
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPwd = document.getElementById("confirm-password").value;
+    const role = document.getElementById("role").value;
+    const agreed = document.getElementById("agree").checked;
+
+    // Validation
+    let hasErrors = false;
+    if (!Validate.minLength(name, 2)) {
+      showFieldError("name", "Please enter your full name."); hasErrors = true;
+    }
+    if (!Validate.email(email)) {
+      showFieldError("email", "Enter a valid email address."); hasErrors = true;
+    }
+    if (!Validate.minLength(password, 6)) {
+      showFieldError("password", "Password must be at least 6 characters."); hasErrors = true;
+    }
+    if (password !== confirmPwd) {
+      showFieldError("confirm-password", "Passwords do not match."); hasErrors = true;
+    }
+    if (!agreed) {
+      showAlert("alert-box", "Please agree to the Terms of Service to continue.", "warning");
+      hasErrors = true;
+    }
+    if (hasErrors) return;
+
+    // Submit
+    const btn = document.getElementById("submit-btn");
+    setButtonLoading(btn, true);
+
+    const result = await apiFetch("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password, role })
+    });
+
+    setButtonLoading(btn, false, "Create Account");
+
+    if (result.success) {
+      showAlert("alert-box", `🎉 ${result.data.message} Redirecting to login...`, "success");
+      setTimeout(() => { window.location.href = "login.html"; }, 2000);
+    } else {
+      showAlert("alert-box", result.error || "Registration failed. Please try again.", "error");
+    }
+  });
+</script>
+</body>
+</html>

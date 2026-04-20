@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — BFU Admissions</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── RPA Verification Panel ─────────────────────────────────── */
+    .rpa-panel {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 12px;
+      color: #f8fafc;
+    }
+    .rpa-panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #7dd3fc;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rpa-check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 13px;
+    }
+    .rpa-check-row:last-child { border-bottom: none; }
+    .rpa-check-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .rpa-check-label { flex: 1; line-height: 1.5; }
+    .rpa-check-label strong { color: #e2e8f0; }
+    .rpa-check-label .issues { color: #fca5a5; font-size: 12px; margin-top: 3px; }
+    .rpa-running {
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: #fde68a;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .category-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: rgba(124,58,237,0.15);
+      color: #a78bfa;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <div class="logo-icon">🎓</div>
+    <span>BFU Admissions</span>
+  </a>
+  <div class="navbar-links">
+    <span id="nav-user-name" style="color:rgba(255,255,255,0.6);font-size:14px;"></span>
+    <span style="color:var(--amber);font-size:12px;font-weight:700;padding:3px 10px;background:rgba(232,160,32,0.15);border-radius:999px;margin-left:4px;">ADMIN</span>
+    <a href="#" onclick="logout()" class="nav-link" style="color:#fca5a5;">Logout</a>
+  </div>
+</nav>
+
+<div class="admin-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dashboard</div>
+      <a href="#" class="sidebar-link active" onclick="showSection('overview')">
+        <span class="icon">📊</span> Overview
+      </a>
+      <a href="#" class="sidebar-link" onclick="showSection('applications')">
+        <span class="icon">📋</span> All Applications
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Filter by Status</div>
+      <a href="#" class="sidebar-link" onclick="filterApps('Pending')">
+        <span class="icon">⏳</span> Pending
+      </a>
+      <a href="#" class="sidebar-link" onclick="filterApps('Approved')">
+        <span class="icon">✅</span> Approved
+      </a>
+      <a href="#" class="sidebar-link" onclick="filterApps('Rejected')">
+        <span class="icon">❌</span> Rejected
+      </a>
+      <a href="#" class="sidebar-link" onclick="filterApps('Docs Incomplete')"
+         style="color:#c2410c;">
+        <span class="icon">📋</span> Docs Incomplete
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Tools</div>
+      <a href="#" class="sidebar-link" onclick="loadApps(); showSection('applications')">
+        <span class="icon">🔄</span> Refresh Data
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="admin-main">
+
+    <!-- Auth Guard -->
+    <div id="auth-guard" class="hidden">
+      <div class="alert alert-error">
+        🔒 Admin access only. <a href="login.html">Please login as admin.</a>
+      </div>
+    </div>
+
+    <!-- Overview Section -->
+    <div id="section-overview">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <h2 style="margin-bottom:4px;">Dashboard Overview</h2>
+          <p class="text-muted text-small">Real-time admission statistics</p>
+        </div>
+        <button onclick="loadStats(); loadApps();" class="btn btn-secondary btn-sm">🔄 Refresh</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-number" id="stat-total">—</div><div class="stat-label">Total Applications</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-pending" style="color:var(--warning);">—</div><div class="stat-label">Pending Review</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-approved" style="color:var(--success);">—</div><div class="stat-label">Approved</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-rejected" style="color:var(--error);">—</div><div class="stat-label">Rejected</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-students" style="color:var(--navy-mid);">—</div><div class="stat-label">Total Students</div></div>
+      </div>
+
+      <!-- Recent Applications Preview -->
+      <div style="margin-top:32px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h3>Recent Applications</h3>
+          <a href="#" onclick="showSection('applications')" style="font-size:14px;">View all →</a>
+        </div>
+        <div id="recent-apps-table"></div>
+      </div>
+    </div>
+
+    <!-- Applications Section -->
+    <div id="section-applications" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:gap;">
+        <div>
+          <h2 id="apps-section-title">All Applications</h2>
+          <p class="text-muted text-small" id="apps-count">Loading...</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="filterApps('')" class="btn btn-secondary btn-sm">All</button>
+          <button onclick="filterApps('Pending')" class="btn btn-sm" style="background:var(--warning-bg);color:var(--warning);border:1px solid #fcd34d;">⏳ Pending</button>
+          <button onclick="filterApps('Approved')" class="btn btn-sm" style="background:var(--success-bg);color:var(--success);border:1px solid #86efac;">✅ Approved</button>
+          <button onclick="filterApps('Rejected')" class="btn btn-sm" style="background:var(--error-bg);color:var(--error);border:1px solid #fca5a5;">❌ Rejected</button>
+          <button onclick="filterApps('Docs Incomplete')" class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fdba74;">📋 Docs Incomplete</button>
+        </div>
+      </div>
+
+      <div id="apps-table-container"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── REVIEW MODAL ── -->
+<div id="review-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:700px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header">
+      <h3 id="modal-title">Review Application</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div id="modal-app-details"></div>
+
+    <div class="form-group" style="margin-top:16px;">
+      <label for="modal-notes">Admin Notes / Reason</label>
+      <textarea id="modal-notes" placeholder="Add notes for the student (optional for approval, recommended for rejection)..." style="min-height:80px;"></textarea>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button id="approve-btn" class="btn btn-success" style="flex:1;justify-content:center;" onclick="submitDecision('approve')">
+        ✅ Approve
+      </button>
+      <button id="reject-btn" class="btn btn-danger" style="flex:1;justify-content:center;" onclick="submitDecision('reject')">
+        ❌ Reject
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+    </div>
+
+    <div id="modal-alert"></div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2024 Bright Future University — Admin Portal</p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  // ── Auth Guard ──
+  const user = Auth.get();
+  if (!user || user.role !== "admin") {
+    document.getElementById("auth-guard").classList.remove("hidden");
+    document.querySelector(".admin-layout").style.opacity = "0.3";
+    document.querySelector(".admin-layout").style.pointerEvents = "none";
+  } else {
+    document.getElementById("nav-user-name").textContent = user.name;
+    loadStats();
+    loadApps();
+  }
+
+  // ── Section Navigation ──
+  function showSection(name) {
+    document.getElementById("section-overview").classList.toggle("hidden", name !== "overview");
+    document.getElementById("section-applications").classList.toggle("hidden", name !== "applications");
+    document.querySelectorAll(".sidebar-link").forEach(l => l.classList.remove("active"));
+  }
+
+  // ── Load Stats ──
+  async function loadStats() {
+    const result = await apiFetch("/admin/stats");
+    if (result.success) {
+      const d = result.data;
+      document.getElementById("stat-total").textContent = d.total_applications;
+      document.getElementById("stat-pending").textContent = d.pending;
+      document.getElementById("stat-approved").textContent = d.approved;
+      document.getElementById("stat-rejected").textContent = d.rejected;
+      document.getElementById("stat-students").textContent = d.total_students;
+    }
+  }
+
+  // ── Load Applications ──
+  let currentApps = [];
+
+  async function loadApps(statusFilter = "") {
+    const url = statusFilter ? `/admin/applications?status_filter=${statusFilter}` : "/admin/applications";
+    const result = await apiFetch(url);
+
+    if (!result.success) {
+      document.getElementById("apps-table-container").innerHTML =
+        `<div class="alert alert-error">Failed to load applications: ${result.error}</div>`;
+      return;
+    }
+
+    currentApps = result.data.applications;
+    renderAppsTable(currentApps, document.getElementById("apps-table-container"));
+
+    // Recent (first 5) for overview
+    renderAppsTable(currentApps.slice(0, 5), document.getElementById("recent-apps-table"), true);
+
+    document.getElementById("apps-count").textContent = `Showing ${currentApps.length} application(s)`;
+  }
+
+  function filterApps(status) {
+    showSection("applications");
+    document.getElementById("apps-section-title").textContent =
+      status ? `${status} Applications` : "All Applications";
+    loadApps(status);
+  }
+
+  // ── Render Table ──
+  function renderAppsTable(apps, container, compact = false) {
+    if (!container) return;
+
+    if (apps.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:48px;color:var(--slate);">
+          <div style="font-size:48px;margin-bottom:12px;">📭</div>
+          <p>No applications found.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#ID</th>
+              <th>Student Name</th>
+              <th>Email</th>
+              <th>Course</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              ${compact ? "" : "<th>Action</th>"}
+            </tr>
+          </thead>
+          <tbody>
+            ${apps.map(app => `
+              <tr>
+                <td><strong>#${app.id}</strong></td>
+                <td>${app.student_name}</td>
+                <td style="font-size:12px;color:var(--slate);">${app.student_email}</td>
+                <td style="font-size:13px;">${app.course}</td>
+                <td>${getStatusBadge(app.status)}</td>
+                <td style="font-size:12px;color:var(--slate);">${formatDate(app.created_at)}</td>
+                ${compact ? "" : `
+                  <td>
+                    ${app.status === "Pending" ? `
+                      <button onclick="openReviewModal(${app.id})" class="btn btn-secondary btn-sm">
+                        👁 Review
+                      </button>
+                    ` : `<span style="color:var(--slate-light);font-size:13px;">—</span>`}
+                  </td>
+                `}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // ── Review Modal ──
+  let currentReviewId = null;
+
+  async function openReviewModal(appId) {
+    currentReviewId = appId;
+    document.getElementById("modal-notes").value = "";
+    clearAlert("modal-alert");
+
+    const result = await apiFetch(`/admin/applications/${appId}`);
+    if (!result.success) {
+      alert("Failed to load application details.");
+      return;
+    }
+
+    const app = result.data;
+    document.getElementById("modal-title").textContent = `Review Application #${app.id}`;
+
+    // Build document links using the document_urls array returned by the API
+    // Falls back to parsing the raw documents string if needed
+    const docLinksHtml = buildDocumentLinks(app.document_urls, app.documents);
+
+    // Build RPA verification report panel
+    const rpaHtml = buildRpaPanel(app);
+
+    // Category badge
+    const cat = app.caste_category || 'General';
+    const catColors = { General:'#2563eb', OBC:'#7c3aed', 'OBC-NCL':'#b45309', SC:'#dc2626', ST:'#059669' };
+    const catColor = catColors[cat] || '#2563eb';
+
+    document.getElementById("modal-app-details").innerHTML = `
+      <div style="background:var(--off-white);border-radius:8px;padding:16px;margin-bottom:4px;">
+        <table style="width:100%;border-collapse:collapse;">
+          ${[
+            ["Student", app.student_name],
+            ["Email", app.student_email],
+            ["Course", `<strong>${app.course}</strong>`],
+            ["Full Name", app.full_name],
+            ["Phone", app.phone || "—"],
+            ["Address", app.address || "—"],
+            ["Category", `<strong style="color:${catColor}">${cat}</strong>` + (app.annual_income ? `  <span style="font-size:12px;color:var(--slate);">Income: ${app.annual_income}</span>` : "")],
+            ["Submitted", formatDate(app.created_at)],
+          ].map(([k, v]) => `
+            <tr>
+              <td style="padding:6px 8px;color:var(--slate);font-size:12px;width:35%;vertical-align:top;">${k}</td>
+              <td style="padding:6px 8px;font-size:13px;">${v}</td>
+            </tr>
+          `).join("")}
+        </table>
+      </div>
+
+      <!-- RPA Verification Report -->
+      ${rpaHtml}
+
+      <!-- Documents Section -->
+      <div style="margin-top:12px;">
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px;">
+          📂 Uploaded Documents
+        </div>
+        ${docLinksHtml}
+      </div>
+    `;
+
+    document.getElementById("review-modal").classList.remove("hidden");
+  }
+
+  // ── RPA Panel Builder ──────────────────────────────────────────────────
+  function buildRpaPanel(app) {
+    if (!app.rpa_verified) {
+      return `
+        <div class="rpa-panel">
+          <div class="rpa-panel-title">🤖 RPA Automatic Verification</div>
+          <div class="rpa-running">
+            <span style="font-size:20px;">⏳</span>
+            <span>Document verification is <strong>running in the background</strong>.
+            Refresh this application in a few seconds to see the result.</span>
+          </div>
+        </div>`;
+    }
+
+    let report;
+    try { report = JSON.parse(app.rpa_result); } catch(e) { report = null; }
+    if (!report) return ""; // no report yet
+
+    const overall = report.overall_passed;
+    const acad = report.academic || {};
+    const caste = report.caste || {};
+    const runAt = report.run_at ? new Date(report.run_at).toLocaleString('en-IN') : '—';
+
+    const acadIcon  = acad.passed  ? '✅' : '❌';
+    const casteIcon = caste.passed ? '✅' : '❌';
+
+    const acadIssues = (acad.documents || [])
+      .flatMap(d => d.issues || [])
+      .map(i => `<div class="issues">• ${i}</div>`);
+    const casteIssues = (caste.issues || [])
+      .map(i => `<div class="issues">• ${i}</div>`);
+
+    const missing = report.missing_docs || [];
+    const missingHtml = missing.length
+      ? `<div style="margin-top:10px;background:rgba(252,165,165,0.1);border:1px solid rgba(252,165,165,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:#fca5a5;">
+           <strong>Missing / unverified documents:</strong>
+           <ul style="margin:4px 0 0 14px;padding:0;">${missing.map(m => `<li>${m}</li>`).join('')}</ul>
+         </div>`
+      : '';
+
+    return `
+      <div class="rpa-panel">
+        <div class="rpa-panel-title">
+          🤖 RPA Automatic Verification
+          <span style="margin-left:auto;font-size:11px;font-weight:400;color:#94a3b8;">ran: ${runAt}</span>
+          <span style="margin-left:8px;font-size:13px;">${overall ? '✅ All Clear' : '⚠️ Issues Found'}</span>
+        </div>
+
+        <div class="rpa-check-row">
+          <span class="rpa-check-icon">${acadIcon}</span>
+          <div class="rpa-check-label">
+            <strong>Academic Documents</strong> —
+            ${acad.passed_docs || 0}/${acad.total_docs || 0} documents verified
+            ${acadIssues.length ? '<br>' + acadIssues.join('') : ''}
+          </div>
+        </div>
+
+        <div class="rpa-check-row">
+          <span class="rpa-check-icon">${casteIcon}</span>
+          <div class="rpa-check-label">
+            <strong>Category / Caste Documents</strong>
+            ${caste.caste_cert_required || caste.income_cert_required
+              ? ` — ${caste.caste_cert_required ? 'Caste Cert ' + (caste.caste_cert_ok ? '✅' : '❌') : ''}
+                  ${caste.income_cert_required ? ' &nbsp; Income/NCL Cert ' + (caste.income_cert_ok ? '✅' : '❌') : ''}`
+              : ' — Not required (General category)'}
+            ${casteIssues.length ? '<br>' + casteIssues.join('') : ''}
+          </div>
+        </div>
+
+        ${missingHtml}
+      </div>`;
+  }
+
+  /**
+   * Build clickable document links with inline previews.
+   * @param {string[]} docUrls   - Array of URL paths like ["/uploads/student_1/abc.pdf"]
+   * @param {string}   rawPaths  - Fallback: raw comma-separated paths from DB
+   */
+  function buildDocumentLinks(docUrls, rawPaths) {
+    // Prefer the pre-built URL array; fall back to parsing raw paths
+    let urls = [];
+    if (Array.isArray(docUrls) && docUrls.length > 0) {
+      urls = docUrls.map(u => ({
+        url: `${API_BASE}${u}`,
+        name: u.split("/").pop()
+      }));
+    } else if (rawPaths && rawPaths.trim()) {
+      urls = rawPaths.split(",").map(p => {
+        const clean = p.trim().replace(/^\.\.[\\/]uploads[\\/]/, "").replace(/^uploads[\\/]/, "");
+        return { url: `${API_BASE}/uploads/${clean}`, name: clean.split("/").pop() };
+      }).filter(f => f.name);
+    }
+
+    if (urls.length === 0) {
+      return `<p style="color:var(--slate-light);font-size:13px;padding:8px 0;">No documents uploaded.</p>`;
+    }
+
+    return urls.map(({ url, name }, i) => {
+      const ext = name.split(".").pop().toLowerCase();
+      const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext);
+      const isPdf = ext === "pdf";
+      const icon = isPdf ? "📄" : isImage ? "🖼️" : "📁";
+
+      return `
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;">
+          <!-- File header row -->
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--white);">
+            <span style="font-size:20px;">${icon}</span>
+            <span style="flex:1;font-size:13px;color:var(--text);word-break:break-all;">${name}</span>
+            <a href="${url}" target="_blank"
+               style="padding:5px 12px;background:var(--navy);color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">
+              🔗 Open
+            </a>
+            <a href="${url}" download="${name}"
+               style="padding:5px 12px;background:var(--amber);color:var(--navy);border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;">
+              ⬇ Download
+            </a>
+          </div>
+
+          <!-- Inline preview -->
+          ${isImage ? `
+            <div style="padding:8px;background:#f8f9fb;border-top:1px solid var(--border);">
+              <img src="${url}" alt="Document ${i+1}"
+                   style="max-width:100%;max-height:280px;border-radius:4px;display:block;margin:0 auto;"
+                   onerror="this.parentElement.innerHTML='<p style=\\'padding:12px;color:var(--slate);font-size:13px;\\'>⚠️ Could not load image. Use the Open link above.</p>'">
+            </div>
+          ` : isPdf ? `
+            <div style="border-top:1px solid var(--border);">
+              <iframe src="${url}" width="100%" height="320"
+                      style="display:block;border:none;">
+              </iframe>
+              <p style="padding:6px 14px;font-size:11px;color:var(--slate-light);">
+                PDF not rendering? <a href="${url}" target="_blank">Open in new tab →</a>
+              </p>
+            </div>
+          ` : `
+            <div style="padding:10px 14px;background:#f8f9fb;border-top:1px solid var(--border);">
+              <p style="color:var(--slate);font-size:12px;">No preview for this file type. Use Open or Download above.</p>
+            </div>
+          `}
+        </div>
+      `;
+    }).join("");
+  }
+
+  function closeModal() {
+    document.getElementById("review-modal").classList.add("hidden");
+    currentReviewId = null;
+  }
+
+  // Close modal on backdrop click
+  document.getElementById("review-modal").addEventListener("click", function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  async function submitDecision(action) {
+    if (!currentReviewId) return;
+
+    const notes = document.getElementById("modal-notes").value.trim();
+    if (action === "reject" && !notes) {
+      showAlert("modal-alert", "Please provide a reason for rejection.", "warning");
+      return;
+    }
+
+    const endpoint = action === "approve"
+      ? `/admin/approve/${currentReviewId}`
+      : `/admin/reject/${currentReviewId}`;
+
+    const btn = document.getElementById(action === "approve" ? "approve-btn" : "reject-btn");
+    setButtonLoading(btn, true);
+
+    const result = await apiFetch(endpoint, {
+      method: "PUT",
+      body: JSON.stringify({ admin_notes: notes })
+    });
+
+    setButtonLoading(btn, false, action === "approve" ? "✅ Approve" : "❌ Reject");
+
+    if (result.success) {
+      closeModal();
+      showAlert("modal-alert", result.data.message, "success");
+      loadStats();
+      loadApps();
+    } else {
+      showAlert("modal-alert", result.error || "Action failed.", "error");
+    }
+  }
+</script>
+</body>
+</html>
